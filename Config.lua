@@ -1,0 +1,194 @@
+-- AngardUI: единая таблица конфигурации. Все коэффициенты симуляции и размеры — здесь.
+local _, ns = ...
+
+ns.C = {
+	-- Размеры панели (в единицах интерфейса при масштабе 100%)
+	layout = {
+		cardWidth = 300, -- ширина карточки и блока гильдии
+		square = 124, -- сторона портрета и блока пульса; питомец — половина
+		lowerMin = 82, -- минимальная высота давления/температуры
+		lowerDefault = 98, -- их высота, когда карточка выключена
+		gap = 4,
+		pad = 8,
+		defaultX = 12, -- позиция по умолчанию от левого верхнего угла экрана
+		defaultY = -12,
+	},
+
+	gold = { 0.86, 0.70, 0.28 },
+	yellow = { 1.00, 0.85, 0.10 },
+
+	-- Как часто (сек) выполняются периодические задачи
+	intervals = { sim = 0.2, slow = 1.0, steps = 0.25, clock = 15, save = 60, roster = 120 },
+
+	-- Множитель «чувствительности» для всего, что поднимает показатели
+	sensitivity = { calm = 0.6, normal = 1.0, dramatic = 1.5 },
+
+	-- ПУЛЬС (уд/мин). Прибавки к пульсу покоя.
+	pulse = {
+		restMin = 62, restMax = 75, -- пульс покоя (постоянный для персонажа)
+		min = 50, max = 190,
+		combat = 22, -- сам факт боя
+		perAttacker = 9, maxAttackers = 4, -- за каждого атакующего
+		lowHealth = 45, -- при 0% здоровья (линейно от потерянного)
+		elite = 10, boss = 24, -- элитная / босс-цель
+		run = 14, swim = 18, fall = 22, breath = 28,
+		sit = -6, eat = -5, rest = -4, -- успокаивают (только вне боя)
+		tauUp = 3.5, tauDown = 9, tauDeath = 1.2, -- сек: скорость роста / спада / остановки
+		noise = 1.6,
+	},
+
+	-- СТРЕСС (0..max) — добавка к давлению
+	stress = {
+		lossGain = 2.2, -- за потерю 100% здоровья
+		hitGain = 0.05, -- за каждый полученный удар (если здоровье недоступно аддону)
+		decay = 14, -- сек, затухание импульсов
+		levelDiff = 3, higherLevel = 0.25, -- цель выше на N уровней
+		skull = 0.5, -- цель-«череп»
+		pvp = 0.2, -- включён PvP-флаг
+		tau = 4,
+		max = 1.5,
+	},
+
+	-- ДАВЛЕНИЕ (мм рт. ст.)
+	bp = {
+		sysBase = 114, diaBase = 73,
+		sysPerBpm = 0.42, diaPerBpm = 0.22, -- за каждый удар сверх пульса покоя
+		sysPerStress = 34, diaPerStress = 20,
+		tau = 5, noise = 1.5,
+		normalSys = 130, normalDia = 85, -- до этих значений — норма
+		highSys = 160, highDia = 100, -- до этих — повышенное, выше — криз
+		scaleMin = 90, scaleMax = 200, -- края шкалы
+	},
+
+	-- ТЕМПЕРАТУРА (°C)
+	temp = {
+		base = 36.6, min = 35.0, max = 40.5,
+		tau = 30, noise = 0.04,
+		swim = -0.5,
+		sick = 1.1, -- дебафф «болезнь» или «яд»
+		drunkPerLevel = 0.25, -- 3 степени опьянения
+		drunkFade = 600, -- сек до снижения степени, если игра не сообщила сама
+		combatMax = 0.7, combatRamp = 120, -- долгий бой: +combatMax за combatRamp сек
+		run = 0.1,
+		indoorsFactor = 0.4, -- в помещении климат зоны влияет слабее
+		chillBelow = 36.2, feverFrom = 37.3, overheatFrom = 38.6,
+		climate = { snow = -0.9, cold = -0.4, swamp = 0.2, hot = 0.4, desert = 0.8, lava = 1.6 },
+	},
+
+	-- Климат зон ванилы. Ключ — AreaID (одинаков во всех клиентах), название зоны
+	-- берётся у игры через C_Map.GetAreaInfo, поэтому таблица не зависит от локали.
+	zones = {
+		[1] = "snow", -- Дун Морог
+		[618] = "snow", -- Зимние Ключи
+		[36] = "snow", -- Альтеракские горы
+		[2597] = "snow", -- Альтеракская долина
+		[3456] = "cold", -- Наксрамас
+		[85] = "cold", -- Тирисфальские леса
+		[130] = "cold", -- Серебряный бор
+		[139] = "cold", -- Восточные Чумные земли
+		[28] = "cold", -- Западные Чумные земли
+		[41] = "cold", -- Перевал Мертвого Ветра
+		[8] = "swamp", -- Болото Печали
+		[15] = "swamp", -- Пылевые топи
+		[11] = "swamp", -- Болотина
+		[33] = "hot", -- Тернистая долина
+		[490] = "hot", -- Кратер Ун'Горо
+		[14] = "hot", -- Дуротар
+		[1637] = "hot", -- Оргриммар
+		[17] = "hot", -- Степи
+		[405] = "hot", -- Пустоши
+		[4] = "hot", -- Выжженные земли
+		[440] = "desert", -- Танарис
+		[1377] = "desert", -- Силитус
+		[3] = "desert", -- Бесплодные земли
+		[400] = "desert", -- Тысяча Игл
+		[51] = "lava", -- Тлеющее ущелье
+		[46] = "lava", -- Пылающие степи
+		[25] = "lava", -- Черная гора
+		[1584] = "lava", -- Глубины Черной горы
+		[1583] = "lava", -- Пик Черной горы
+		[2717] = "lava", -- Огненные Недра
+		[2437] = "lava", -- Огненная пропасть
+	},
+
+	-- Названия аур еды/питья (сравнение по имени, вне боя)
+	foodAuras = {
+		["Food"] = true, ["Drink"] = true, ["Refreshment"] = true, ["Food & Drink"] = true,
+		["Еда"] = true, ["Питье"] = true, ["Питьё"] = true, ["Угощение"] = true, ["Еда и питье"] = true,
+	},
+
+	-- ШАГИ
+	steps = {
+		yard = 0.9144, -- метров в ярде
+		slack = 1.3, -- во сколько раз смещение может превышать скорость*время (иначе телепорт/транспорт)
+		maxGap = 1.0, -- сек: более длинная пауза между замерами не учитывается
+	},
+
+	-- КАРДИОГРАММА
+	ecg = {
+		window = 1.5, -- сколько секунд помещается в окно графика
+		fps = 30,
+		-- форма одного удара: пары (доля периода, высота)
+		shape = { 0, 0, 0.10, 0, 0.15, 0.12, 0.20, 0, 0.26, 0, 0.29, -0.15, 0.32, 1, 0.36, -0.30, 0.39, 0,
+			0.50, 0, 0.56, 0.18, 0.62, 0.20, 0.68, 0, 1, 0 },
+	},
+
+	-- Иконки: { основная, запасная }. Запасная берётся, если основной нет в клиенте.
+	icons = {
+		Horde = { "Interface\\Icons\\PVPCurrency-Honor-Horde", "Interface\\Icons\\INV_BannerPVP_01" },
+		Alliance = { "Interface\\Icons\\PVPCurrency-Honor-Alliance", "Interface\\Icons\\INV_BannerPVP_02" },
+		Neutral = { "Interface\\Icons\\INV_Misc_QuestionMark", "Interface\\Icons\\INV_Misc_QuestionMark" },
+		steps = { "Interface\\Icons\\INV_Boots_05", "Interface\\Icons\\Ability_Rogue_Sprint" },
+		rules_pve = { "Interface\\Icons\\INV_Scroll_03", "Interface\\Icons\\INV_Misc_Note_01" },
+		rules_pvp = { "Interface\\Icons\\Ability_DualWield", "Interface\\Icons\\INV_Sword_04" },
+		rules_hc = { "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01", "Interface\\Icons\\Ability_Creature_Cursed_02" },
+		rules_rp = { "Interface\\Icons\\INV_Misc_Book_11", "Interface\\Icons\\INV_Misc_Book_09" },
+		time = { "Interface\\Icons\\INV_Misc_PocketWatch_01", "Interface\\Icons\\INV_Misc_PocketWatch_02" },
+		money = { "Interface\\Icons\\INV_Misc_Coin_02", "Interface\\Icons\\INV_Misc_Coin_01" },
+		heart = { "Interface\\Icons\\INV_ValentinesCandy", "Interface\\Icons\\Spell_Holy_Heal" },
+		unknown = { "Interface\\Icons\\INV_Misc_QuestionMark", "Interface\\Icons\\INV_Misc_QuestionMark" },
+	},
+
+	-- Профессии: SkillLineID -> запасная иконка
+	professions = {
+		[164] = "Interface\\Icons\\Trade_BlackSmithing",
+		[165] = "Interface\\Icons\\Trade_LeatherWorking",
+		[171] = "Interface\\Icons\\Trade_Alchemy",
+		[182] = "Interface\\Icons\\Trade_Herbalism",
+		[186] = "Interface\\Icons\\Trade_Mining",
+		[197] = "Interface\\Icons\\Trade_Tailoring",
+		[202] = "Interface\\Icons\\Trade_Engineering",
+		[333] = "Interface\\Icons\\Trade_Engraving",
+		[393] = "Interface\\Icons\\INV_Misc_Pelt_Wolf_01",
+		[755] = "Interface\\Icons\\INV_Misc_Gem_01",
+		[773] = "Interface\\Icons\\INV_Inscription_Tradeskill01",
+		[129] = "Interface\\Icons\\Spell_Holy_SealOfSacrifice",
+		[185] = "Interface\\Icons\\INV_Misc_Food_15",
+		[356] = "Interface\\Icons\\Trade_Fishing",
+	},
+	secondaryProfessions = { [129] = true, [185] = true, [356] = true },
+}
+
+-- Настройки по умолчанию (на аккаунт)
+ns.defaults = {
+	shown = true,
+	locked = false,
+	scale = 1.0,
+	bgAlpha = 0.75,
+	hideInCombat = false,
+	pos = false, -- false = позиция по умолчанию
+	blocks = { card = true, portrait = true, pulse = true, pressure = true, temp = true, guild = true, pet = true },
+	card = { spec = true, rules = true, time = true, money = true, steps = true, profs = true },
+	ruleset = "auto", -- auto / pve / pvp / hc / rp
+	med = { sens = "normal", unit = "C", ecgAnim = true },
+	guild = { count = 8, maxRank = 1, onlineOnly = true },
+	steps = { length = 0.75 },
+}
+
+-- Данные персонажа
+ns.charDefaults = {
+	steps = 0,
+	levelSeconds = 0,
+	levelInit = false,
+	level = 0,
+}
