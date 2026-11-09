@@ -248,7 +248,15 @@ function card:Refresh()
 	local _, classFile = UnitClass("player")
 	classFile = P(classFile)
 	local className = P(UnitClass("player"), "")
-	nameText:SetText(P(UnitName("player"), ""))
+	-- в Forever UnitName возвращает имя и фамилию двумя значениями
+	local first, surname = UnitName("player")
+	first, surname = P(first, ""), P(surname)
+	local fullName = first
+	if type(surname) == "string" and surname ~= "" then
+		local consts = Constants and Constants.CharacterNameSeparatorConsts
+		fullName = first .. (consts and consts.CHARACTERNAME_SURNAME_SEPARATOR or " ") .. surname
+	end
+	nameText:SetText(fullName)
 	nameText:SetTextColor(ns.ClassColor(classFile))
 	levelText:SetText(L.LEVEL:format(P(UnitLevel("player"), 0)))
 
@@ -263,6 +271,8 @@ function card:Refresh()
 	-- строки
 	local specName, specIcon = GetSpec()
 	rows.spec.icon:SetTexture(specIcon or (classFile and ("Interface\\Icons\\ClassIcon_" .. classFile)) or ns.Icon("unknown"))
+	-- до выбора специализации игра отдаёт вместо неё название класса — не дублируем
+	if specName == className then specName = nil end
 	rows.spec.text:SetText(specName and L.CLASS_SPEC:format(className, specName) or className)
 
 	local rule = ns.GetRuleset()

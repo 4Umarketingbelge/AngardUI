@@ -324,7 +324,7 @@ end
 -- Три колонки; выключенные блоки и пустые колонки не оставляют дыр.
 local COLUMNS = {
 	{ "card", "guild" },
-	{ "portrait", "pressure", "pet" },
+	{ "portrait", "vitals", "pet" },
 	{ "pulse", "temp" },
 }
 
@@ -333,7 +333,7 @@ function ns:Layout()
 	local S, gap = lay.square, lay.gap
 
 	local vis = {}
-	for key, on in pairs(db.blocks) do vis[key] = on and B[key] ~= nil end
+	for key in pairs(B) do vis[key] = db.blocks[key] and true or false end
 	vis.guild = vis.guild and ns.state.hasGuild
 	vis.pet = vis.pet and ns.state.hasPet
 
@@ -344,7 +344,7 @@ function ns:Layout()
 	B.guild:SetWidth(lay.cardWidth)
 	B.portrait:SetSize(S, S)
 	B.pulse:SetSize(S, S)
-	B.pressure:SetSize(S, lowerH)
+	B.vitals:SetSize(S, lowerH)
 	B.temp:SetSize(S, lowerH)
 	B.pet:SetSize(S / 2, S / 2)
 
@@ -392,6 +392,35 @@ function ns:ApplyAll()
 	for _, f in pairs(ns.blocks) do f:EnableMouse(not db.locked) end
 	ns:RefreshAll()
 	ns:UpdateVisibility()
+	ns:ApplyPlayerFrame()
+	if ns.ApplyMinimap then ns:ApplyMinimap() end
+end
+
+-- Стандартная рамка игрока (портрет, здоровье, мана) дублирует панель. Она защищённая,
+-- поэтому скрывается штатным драйвером состояния и только вне боя; если настройку
+-- поменяли в бою — применится сразу после него.
+local playerFrameHidden = false
+local function restorePlayerFrame(pf)
+	UnregisterStateDriver(pf, "visibility")
+	pf:Show()
+end
+function ns:ApplyPlayerFrame()
+	local want = ns.db.hidePlayerFrame and true or false
+	if want == playerFrameHidden then return end
+	local pf = _G.PlayerFrame
+	if not pf or type(RegisterStateDriver) ~= "function" then return end
+	if InCombatLockdown() then
+		ns.state.playerFramePending = true
+		return
+	end
+	ns.state.playerFramePending = false
+	local ok
+	if want then
+		ok = pcall(RegisterStateDriver, pf, "visibility", "hide")
+	else
+		ok = pcall(restorePlayerFrame, pf)
+	end
+	if ok then playerFrameHidden = want end
 end
 
 ------------------------------------------------------------------------
@@ -421,6 +450,11 @@ ns:On("ADDON_LOADED", function(_, name)
 	AngardUIDB = copyDefaults(ns.defaults, type(AngardUIDB) == "table" and AngardUIDB or {})
 	AngardUICharDB = copyDefaults(ns.charDefaults, type(AngardUICharDB) == "table" and AngardUICharDB or {})
 	ns.db, ns.chardb = AngardUIDB, AngardUICharDB
+	-- 1.0 -> 1.1: блок давления заменён блоком здоровья и маны
+	if ns.db.blocks.pressure ~= nil then
+		ns.db.blocks.vitals = ns.db.blocks.pressure
+		ns.db.blocks.pressure = nil
+	end
 end)
 
 ns:On("PLAYER_LOGIN", function()
@@ -444,6 +478,7 @@ end)
 ns:On("PLAYER_REGEN_ENABLED", function()
 	ns.state.inCombat = false
 	ns:UpdateVisibility()
+	if ns.state.playerFramePending then ns:ApplyPlayerFrame() end
 end)
 
 -- при смене масштаба интерфейса или разрешения держим панель на месте

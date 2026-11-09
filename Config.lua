@@ -6,7 +6,7 @@ ns.C = {
 	layout = {
 		cardWidth = 300, -- ширина карточки и блока гильдии
 		square = 124, -- сторона портрета и блока пульса; питомец — половина
-		lowerMin = 82, -- минимальная высота давления/температуры
+		lowerMin = 82, -- минимальная высота блоков здоровья и температуры
 		lowerDefault = 98, -- их высота, когда карточка выключена
 		gap = 4,
 		pad = 8,
@@ -33,11 +33,12 @@ ns.C = {
 		elite = 10, boss = 24, -- элитная / босс-цель
 		run = 14, swim = 18, fall = 22, breath = 28,
 		sit = -6, eat = -5, rest = -4, -- успокаивают (только вне боя)
+		perStress = 14, -- за единицу стресса
 		tauUp = 3.5, tauDown = 9, tauDeath = 1.2, -- сек: скорость роста / спада / остановки
 		noise = 1.6,
 	},
 
-	-- СТРЕСС (0..max) — добавка к давлению
+	-- СТРЕСС (0..max) — добавка к пульсу: резкая потеря здоровья, сильная цель, PvP-флаг
 	stress = {
 		lossGain = 2.2, -- за потерю 100% здоровья
 		hitGain = 0.05, -- за каждый полученный удар (если здоровье недоступно аддону)
@@ -47,17 +48,6 @@ ns.C = {
 		pvp = 0.2, -- включён PvP-флаг
 		tau = 4,
 		max = 1.5,
-	},
-
-	-- ДАВЛЕНИЕ (мм рт. ст.)
-	bp = {
-		sysBase = 114, diaBase = 73,
-		sysPerBpm = 0.42, diaPerBpm = 0.22, -- за каждый удар сверх пульса покоя
-		sysPerStress = 34, diaPerStress = 20,
-		tau = 5, noise = 1.5,
-		normalSys = 130, normalDia = 85, -- до этих значений — норма
-		highSys = 160, highDia = 100, -- до этих — повышенное, выше — криз
-		scaleMin = 90, scaleMax = 200, -- края шкалы
 	},
 
 	-- ТЕМПЕРАТУРА (°C)
@@ -176,8 +166,10 @@ ns.defaults = {
 	scale = 1.0,
 	bgAlpha = 0.75,
 	hideInCombat = false,
+	hidePlayerFrame = true, -- скрывать стандартную рамку игрока (портрет, здоровье, мана)
+	minimap = { show = true, angle = 205 }, -- кнопка у миникарты
 	pos = false, -- false = позиция по умолчанию
-	blocks = { card = true, portrait = true, pulse = true, pressure = true, temp = true, guild = true, pet = true },
+	blocks = { card = true, portrait = true, pulse = true, vitals = true, temp = true, guild = true, pet = true },
 	card = { spec = true, rules = true, time = true, money = true, steps = true, profs = true },
 	ruleset = "auto", -- auto / pve / pvp / hc / rp
 	med = { sens = "normal", unit = "C", ecgAnim = true },

@@ -326,6 +326,8 @@ do
 	p:Add(Check(p, L.O_SHOW, flag(nil, "shown")))
 	p:Add(Check(p, L.O_LOCK, flag(nil, "locked")))
 	p:Add(Check(p, L.O_HIDE_COMBAT, flag(nil, "hideInCombat")))
+	p:Add(Check(p, L.O_HIDE_PLAYER, flag(nil, "hidePlayerFrame")))
+	p:Add(Check(p, L.O_MINIMAP, flag("minimap", "show")))
 	p.y = p.y + 8
 	local getS, setS = flag(nil, "scale")
 	p:Add(Slider(p, L.O_SCALE, 0.6, 1.6, 0.05, getS, setS, percent))
@@ -341,7 +343,7 @@ end
 -- 2. Блоки
 do
 	local p = Page("blocks", L.TAB_BLOCKS)
-	local order = { "card", "portrait", "pulse", "pressure", "temp", "guild", "pet" }
+	local order = { "card", "portrait", "pulse", "vitals", "temp", "guild", "pet" }
 	for _, key in ipairs(order) do
 		p:Add(Check(p, L["B_" .. key:upper()], flag("blocks", key)))
 	end
