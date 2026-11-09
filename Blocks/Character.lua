@@ -114,8 +114,47 @@ end
 -- Данные
 ------------------------------------------------------------------------
 
--- Специализация: API специализаций, запасной вариант — ветка талантов с максимумом очков.
+-- В Forever специализацию не выбирают отдельно: это ветка талантов, в которую вложено
+-- больше всего очков. Так же считает само окно талантов игры (группы черт дерева талантов).
+local function TraitTreeSpec()
+	local SI, T = C_SpecializationInfo, C_Traits
+	if not (T and T.GetConfigInfo and T.GetGroupDisplayInfoByTreeID and T.GetGroupCurrencyInfo) then return nil end
+	local configID
+	if SI and SI.GetCombatConfigIDForSpecGroup then
+		configID = SI.GetCombatConfigIDForSpecGroup(SI.GetActiveSpecGroup and SI.GetActiveSpecGroup() or 1)
+	end
+	if not configID and C_ClassTalents and C_ClassTalents.GetActiveConfigID then
+		configID = C_ClassTalents.GetActiveConfigID()
+	end
+	if not configID then return nil end
+	local config = T.GetConfigInfo(configID)
+	local treeID = config and config.treeIDs and config.treeIDs[1]
+	if not treeID then return nil end
+
+	local displays = T.GetGroupDisplayInfoByTreeID(treeID)
+	local ids = {}
+	for i, d in ipairs(displays) do ids[i] = d.groupID end
+	local infos = T.GetGroupCurrencyInfo(configID, ids)
+
+	local bestName, bestIcon, bestSpent = nil, nil, 0
+	for _, d in ipairs(displays) do
+		for _, g in ipairs(infos) do
+			if g.traitNodeGroupID == d.groupID then
+				local currency = g.currencyInfos and g.currencyInfos[1]
+				local spent = currency and currency.spent or 0
+				if spent > bestSpent then
+					bestName, bestIcon, bestSpent = d.displayName, d.icon, spent
+				end
+			end
+		end
+	end
+	return bestName, bestIcon
+end
+
+-- Специализация: ветка талантов Forever, затем API специализаций, затем старые вкладки талантов.
 local function GetSpec()
+	local ok, treeName, treeIcon = pcall(TraitTreeSpec)
+	if ok and type(treeName) == "string" and treeName ~= "" then return treeName, treeIcon end
 	local SI = C_SpecializationInfo
 	local idx = ns.Call(SI and SI.GetSpecialization) or ns.Call(GetSpecialization)
 	if type(idx) == "number" and idx > 0 then
@@ -343,3 +382,6 @@ ns:On("PLAYER_SPECIALIZATION_CHANGED", full)
 ns:On("ACTIVE_TALENT_GROUP_CHANGED", full)
 ns:On("PLAYER_TALENT_UPDATE", full)
 ns:On("GAME_RULES_CHANGED", full)
+ns:On("TRAIT_CONFIG_UPDATED", full)
+ns:On("TRAIT_TREE_CURRENCY_INFO_UPDATED", full)
+ns:On("ACTIVE_COMBAT_CONFIG_CHANGED", full)

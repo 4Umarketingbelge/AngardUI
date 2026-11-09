@@ -1,13 +1,13 @@
 -- AngardUI: симуляция «медицины». Чистая выдумка по игровым событиям: аддон только
 -- читает состояние персонажа и ничего не делает в игре.
--- Все коэффициенты — в Config.lua (ns.C.pulse / stress / temp).
+-- Все коэффициенты — в Config.lua (ns.C.pulse / stress / bp / temp).
 local _, ns = ...
 local C = ns.C
 local P, issecret = ns.Plain, ns.issecret
 local exp, min, max, random = math.exp, math.min, math.max, math.random
 
 -- Текущие показатели (их читают блоки)
-local med = { pulse = 68, temp = 36.6, stress = 0, rest = 68, dead = false }
+local med = { pulse = 68, sys = 118, dia = 76, temp = 36.6, stress = 0, rest = 68, dead = false }
 ns.med = med
 
 -- Наблюдаемое состояние
@@ -22,8 +22,8 @@ local env = {
 }
 ns.env = env
 
-local raw = { pulse = 68, temp = 36.6 }
-local noise = { pulse = 0, temp = 0 }
+local raw = { pulse = 68, sys = 118, dia = 76, temp = 36.6 }
+local noise = { pulse = 0, bp = 0, temp = 0 }
 
 local sim = {}
 ns.modules[#ns.modules + 1] = sim
@@ -62,6 +62,7 @@ local function UpdateZone()
 	end
 	local kind = climateByName[ns.Call(GetSubZoneText) or ""] or climateByName[ns.Call(GetRealZoneText) or ""]
 	env.climate = kind and C.temp.climate[kind] or 0
+	env.climateKind = kind or "mild"
 end
 
 -- Дебаффы болезнь/яд и ауры еды/питья. В бою поля аур могут быть секретными —
@@ -158,7 +159,7 @@ end
 local function Tick(dt)
 	if not ns.root:IsShown() then return end
 	if dt > 2 then dt = 2 end
-	local Cp, Cs, Ct = C.pulse, C.stress, C.temp
+	local Cp, Cs, Cb, Ct = C.pulse, C.stress, C.bp, C.temp
 	local sens = C.sensitivity[ns.db.med.sens] or 1
 	local inCombat = ns.state.inCombat
 
@@ -231,6 +232,16 @@ local function Tick(dt)
 		med.pulse = clamp(raw.pulse + wander("pulse", Cp.noise), Cp.min, Cp.max)
 	end
 
+	-- ДАВЛЕНИЕ: пульс сверх покоя + стресс
+	local over = max(raw.pulse - med.rest, 0)
+	local sysT = dead and 0 or (Cb.sysBase + over * Cb.sysPerBpm + med.stress * Cb.sysPerStress)
+	local diaT = dead and 0 or (Cb.diaBase + over * Cb.diaPerBpm + med.stress * Cb.diaPerStress)
+	raw.sys = approach(raw.sys, sysT, dt, dead and Cp.tauDeath or Cb.tau)
+	raw.dia = approach(raw.dia, diaT, dt, dead and Cp.tauDeath or Cb.tau)
+	local bpNoise = dead and 0 or wander("bp", Cb.noise)
+	med.sys = max(raw.sys + bpNoise, 0)
+	med.dia = max(raw.dia + bpNoise * 0.6, 0)
+
 	-- ТЕМПЕРАТУРА
 	local climate = env.climate
 	if P(IsIndoors(), false) then climate = climate * Ct.indoorsFactor end
@@ -244,15 +255,20 @@ local function Tick(dt)
 	if swimming then tT = tT + Ct.swim end
 	raw.temp = approach(raw.temp, clamp(tT, Ct.min, Ct.max), dt, Ct.tau)
 	med.temp = clamp(raw.temp + wander("temp", Ct.noise), Ct.min, Ct.max)
-
-	local B = ns.blocks
-	if B.pulse:IsShown() then B.pulse:Update() end
-	if B.temp:IsShown() then B.temp:Update() end
 end
 
 ------------------------------------------------------------------------
 -- Статусы (их используют блоки)
 ------------------------------------------------------------------------
+
+-- "normal" / "high" / "crisis"
+function ns.PressureStatus()
+	local b = C.bp
+	if med.dead then return "crisis" end
+	if med.sys < b.normalSys and med.dia < b.normalDia then return "normal" end
+	if med.sys < b.highSys and med.dia < b.highDia then return "high" end
+	return "crisis"
+end
 
 -- "chill" / "normal" / "fever" / "overheat"
 function ns.TempStatus()

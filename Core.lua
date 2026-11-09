@@ -136,6 +136,18 @@ function ns.FormatDuration(sec)
 	return L.T_M:format(m)
 end
 
+local GOLD_ICON = "|TInterface\\MoneyFrame\\UI-GoldIcon:12:12:1:0|t"
+local SILVER_ICON = "|TInterface\\MoneyFrame\\UI-SilverIcon:12:12:1:0|t"
+local COPPER_ICON = "|TInterface\\MoneyFrame\\UI-CopperIcon:12:12:1:0|t"
+
+-- Короткая запись суммы: две старшие монеты со значками
+function ns.Coins(copper)
+	local g, s, c = floor(copper / 10000), floor(copper / 100) % 100, floor(copper % 100)
+	if g > 0 then return ("%s%s %d%s"):format(ns.Group(g), GOLD_ICON, s, SILVER_ICON) end
+	if s > 0 then return ("%d%s %d%s"):format(s, SILVER_ICON, c, COPPER_ICON) end
+	return c .. COPPER_ICON
+end
+
 -- Десятичная дробь с разделителем локали: 37.2 -> "37,2"
 function ns.Decimal(v, digits)
 	local s = string.format("%." .. (digits or 1) .. "f", v)
@@ -308,10 +320,10 @@ function ns:SavePosition()
 end
 
 -- Обычный незащищённый фрейм: его можно показывать, скрывать и двигать в бою.
-function ns:NewBlock(key, w, h)
+function ns:NewBlock(key, w, h, noSkin)
 	local f = CreateFrame("Frame", "AngardUIBlock_" .. key, root)
 	f:SetSize(w, h)
-	ns.Skin(f)
+	if not noSkin then ns.Skin(f) end
 	f:RegisterForDrag("LeftButton")
 	f:SetScript("OnDragStart", function()
 		if not ns.db.locked then root:StartMoving() end
@@ -325,9 +337,10 @@ function ns:NewBlock(key, w, h)
 end
 
 -- Три колонки; выключенные блоки и пустые колонки не оставляют дыр.
+-- Блок питомца стоит отдельно: под правыми колонками, на всю их ширину.
 local COLUMNS = {
 	{ "card", "guild" },
-	{ "portrait", "vitals", "pet" },
+	{ "portrait", "vitals" },
 	{ "pulse", "temp" },
 }
 
@@ -349,10 +362,10 @@ function ns:Layout()
 	B.pulse:SetSize(S, S)
 	B.vitals:SetSize(S, lowerH)
 	B.temp:SetSize(S, lowerH)
-	B.pet:SetSize(S / 2, S / 2)
 
 	local x, maxY = 0, 0
-	for _, column in ipairs(COLUMNS) do
+	local colX, colBottom = {}, {}
+	for c, column in ipairs(COLUMNS) do
 		local y, colW = 0, 0
 		for _, key in ipairs(column) do
 			local f = B[key]
@@ -367,11 +380,26 @@ function ns:Layout()
 			end
 		end
 		if colW > 0 then
+			colX[c], colBottom[c] = x, y
 			x = x + colW + gap
 			maxY = max(maxY, y)
 		end
 	end
-	root:SetSize(max(x - gap, 1), max(maxY - gap, 1))
+
+	local right = x - gap
+	local pet = B.pet
+	if vis.pet then
+		local px = colX[2] or colX[3] or x
+		local py = max(colBottom[2] or 0, colBottom[3] or 0)
+		pet:ClearAllPoints()
+		pet:SetPoint("TOPLEFT", root, "TOPLEFT", px, -py)
+		pet:Show()
+		right = max(right, px + pet:GetWidth())
+		maxY = max(maxY, py + pet:GetHeight() + gap)
+	else
+		pet:Hide()
+	end
+	root:SetSize(max(right, 1), max(maxY - gap, 1))
 end
 
 function ns:UpdateVisibility()

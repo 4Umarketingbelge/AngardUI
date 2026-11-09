@@ -340,12 +340,13 @@ local function Build()
 	menu = NewFrame("Frame", nil, win)
 	menu:SetFrameStrata("TOOLTIP")
 	menu:EnableMouse(true)
+	menu:SetClampedToScreen(true)
 	menu:Hide()
 	Box(menu, 0.97, 0.9)
 
 	-- плитки: три колонки, плитки в колонке идут сверху вниз
 	local columns = { {}, {}, {} }
-	local function Tile(col, title)
+	local function Tile(col, title, first)
 		local tile = NewFrame("Frame", nil, win)
 		Rounded(tile, FILL_TILE, 0.75)
 		local pill = tile:CreateTexture(nil, "ARTWORK")
@@ -361,7 +362,7 @@ local function Build()
 			self.y = self.y + (widget.height or (widget:GetHeight() + 6)) + (space or 0)
 			return widget
 		end
-		table.insert(columns[col], tile)
+		if first then table.insert(columns[col], 1, tile) else table.insert(columns[col], tile) end
 		return tile
 	end
 
@@ -416,7 +417,7 @@ local function Build()
 
 	-- 6. Шаги
 	do
-		local t = Tile(1, L.TAB_STEPS)
+		local t = Tile(3, L.TAB_STEPS)
 		local getL, setL = flag("steps", "length")
 		t:Add(Slider(t, L.S_LENGTH, 0.5, 1.0, 0.01, getL, setL, function(v)
 			return L.S_LENGTH_FMT:format(ns.Decimal(v, 2))
@@ -447,9 +448,27 @@ local function Build()
 		end
 	end
 
-	-- 4. Медицина
+	-- 4. Виджеты: что показывать в двух сменных квадратах, корм питомца, симуляция
 	do
-		local t = Tile(2, L.TAB_MED)
+		local t = Tile(3, L.TAB_WIDGETS, true)
+		local function widgetList()
+			local items = {}
+			for i, key in ipairs(ns.widgetOrder) do
+				items[i] = { value = key, text = ns.widgets[key].title }
+			end
+			return items
+		end
+		local getT, setT = flag("slots", "top")
+		t:Add(Dropdown(t, L.W_SLOT1, widgetList, getT, setT))
+		local getB, setB = flag("slots", "bottom")
+		t:Add(Dropdown(t, L.W_SLOT2, widgetList, getB, setB))
+		local foods = {
+			{ value = "meat", text = L.FOOD_MEAT },
+			{ value = "veggies", text = L.FOOD_VEGGIES },
+			{ value = "fish", text = L.FOOD_FISH },
+		}
+		local getF, setF = flag("pet", "food")
+		t:Add(Dropdown(t, L.PET_FOOD, function() return foods end, getF, setF))
 		local sens = {
 			{ value = "calm", text = L.M_CALM },
 			{ value = "normal", text = L.M_NORMAL },
@@ -465,7 +484,7 @@ local function Build()
 
 	-- 3. Карточка
 	do
-		local t = Tile(3, L.TAB_CARD)
+		local t = Tile(2, L.TAB_CARD)
 		for _, key in ipairs({ "spec", "rules", "time", "money", "steps", "profs" }) do
 			t:Add(Check(t, L["C_" .. key:upper()], flag("card", key)))
 		end
@@ -483,7 +502,7 @@ local function Build()
 
 	-- 5. Гильдия
 	do
-		local t = Tile(3, L.TAB_GUILD)
+		local t = Tile(1, L.TAB_GUILD)
 		local getC, setC = flag("guild", "count")
 		t:Add(Slider(t, L.G_COUNT, 2, 12, 1, getC, setC, function(v) return tostring(floor(v + 0.5)) end))
 		-- ранги гильдии: значение — индекс ранга с нуля (0 = глава)

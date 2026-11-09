@@ -50,6 +50,34 @@ ns.C = {
 		max = 1.5,
 	},
 
+	-- ДАВЛЕНИЕ (мм рт. ст.) — виджет «Давление»
+	bp = {
+		sysBase = 114, diaBase = 73,
+		sysPerBpm = 0.42, diaPerBpm = 0.22, -- за каждый удар сверх пульса покоя
+		sysPerStress = 34, diaPerStress = 20,
+		tau = 5, noise = 1.5,
+		normalSys = 130, normalDia = 85, -- до этих значений — норма
+		highSys = 160, highDia = 100, -- до этих — повышенное, выше — криз
+		scaleMin = 90, scaleMax = 200, -- края шкалы
+	},
+
+	-- ПОГОДА — виджет «Погода». У игры нет функции погоды, поэтому она выдумана
+	-- по климату зоны и времени суток.
+	weather = {
+		air = { snow = -8, cold = 6, mild = 16, swamp = 22, hot = 28, desert = 36, lava = 48 }, -- °C днём
+		night = -6, -- поправка ночью
+		rain = { mild = 0.25, cold = 0.35, swamp = 0.40, hot = 0.10 }, -- вероятность осадков
+	},
+
+	-- ПИТОМЕЦ: сколько кусочков корма остаётся при настроении 1 / 2 / 3
+	pet = { pieces = 7, byHappiness = { 1, 4, 7 } },
+	-- виды корма: иконка целого кусочка и иконка съеденного (без неё — бледный след)
+	petFood = {
+		meat = { icon = "food_meat", eaten = "bone" },
+		veggies = { icon = "food_veggies" },
+		fish = { icon = "food_fish", eaten = "bone" },
+	},
+
 	-- ТЕМПЕРАТУРА (°C)
 	temp = {
 		base = 36.6, min = 35.0, max = 40.5,
@@ -139,6 +167,24 @@ ns.C = {
 		money = { "Interface\\Icons\\INV_Misc_Coin_02", "Interface\\Icons\\INV_Misc_Coin_01" },
 		heart = { "Interface\\Icons\\INV_ValentinesCandy", "Interface\\Icons\\Spell_Holy_Heal" },
 		unknown = { "Interface\\Icons\\INV_Misc_QuestionMark", "Interface\\Icons\\INV_Misc_QuestionMark" },
+		-- виджеты
+		map = { "Interface\\Icons\\INV_Misc_Map_01", "Interface\\Icons\\INV_Misc_Note_01" },
+		xp = { "Interface\\Icons\\INV_Misc_Book_09", "Interface\\Icons\\INV_Misc_Note_01" },
+		gear = { "Interface\\Icons\\INV_Misc_Gear_01", "Interface\\Icons\\Trade_Engineering" },
+		bag = { "Interface\\Icons\\INV_Misc_Bag_08", "Interface\\Icons\\INV_Misc_Bag_10" },
+		anvil = { "Interface\\Icons\\Trade_BlackSmithing" },
+		wx_snow = { "Interface\\Icons\\Spell_Frost_FrostNova" },
+		wx_ash = { "Interface\\Icons\\Spell_Fire_Volcano", "Interface\\Icons\\Spell_Fire_Fire" },
+		wx_heat = { "Interface\\Icons\\Spell_Fire_Fire" },
+		wx_rain = { "Interface\\Icons\\Spell_Frost_SummonWaterElemental", "Interface\\Icons\\Spell_Frost_FrostBolt02" },
+		wx_fog = { "Interface\\Icons\\Spell_Nature_Sleep", "Interface\\Icons\\Spell_Frost_FrostNova" },
+		wx_clear = { "Interface\\Icons\\Spell_Holy_HolyBolt", "Interface\\Icons\\Spell_Fire_Fire" },
+		wx_night = { "Interface\\Icons\\Spell_Nature_StarFall", "Interface\\Icons\\Spell_Nature_Sleep" },
+		-- корм питомца
+		food_meat = { "Interface\\Icons\\INV_Misc_Food_14", "Interface\\Icons\\INV_Misc_Food_16" },
+		food_veggies = { "Interface\\Icons\\INV_Misc_Food_19", "Interface\\Icons\\INV_Misc_Food_08" },
+		food_fish = { "Interface\\Icons\\INV_Misc_Fish_02", "Interface\\Icons\\INV_Misc_Fish_01" },
+		bone = { "Interface\\Icons\\INV_Misc_Bone_01", "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01" },
 	},
 
 	-- Профессии: SkillLineID -> запасная иконка
@@ -175,6 +221,8 @@ ns.defaults = {
 	card = { spec = true, rules = true, time = true, money = true, steps = true, profs = true },
 	ruleset = "auto", -- auto / pve / pvp / hc / rp
 	med = { sens = "normal", unit = "C", ecgAnim = true },
+	slots = { top = "pulse", bottom = "temp" }, -- какие виджеты стоят в двух сменных квадратах
+	pet = { food = "meat" }, -- meat / veggies / fish
 	guild = { count = 8, maxRank = 1, onlineOnly = true },
 	steps = { length = 0.75 },
 }

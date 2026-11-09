@@ -1,9 +1,9 @@
 ## Interface: 16001
 ## Title: AngardUI
-## Notes: Character panel with a simulated "medical" readout: pulse, temperature, steps, health and mana.
-## Notes-ruRU: Панель персонажа с симуляцией «медицины»: пульс, температура, шаги, здоровье и мана.
+## Notes: Character panel with a simulated "medical" readout: health and mana, steps, pet and swappable widgets (pulse, temperature, clock, weather and more).
+## Notes-ruRU: Панель персонажа с симуляцией «медицины»: здоровье и мана, шаги, питомец и сменные виджеты (пульс, температура, часы, погода и другие).
 ## Author: Andrei Pilinoha
-## Version: 1.2.0
+## Version: 1.3.1
 ## IconTexture: Interface\Icons\Spell_Holy_Heal
 ## AddonCompartmentFunc: AngardUI_OnAddonCompartmentClick
 ## SavedVariables: AngardUIDB
@@ -14,11 +14,13 @@ Config.lua
 Core.lua
 Simulation.lua
 Tracker.lua
+Widgets.lua
 Blocks\Character.lua
 Blocks\Portrait.lua
 Blocks\Pulse.lua
 Blocks\Vitals.lua
 Blocks\Temperature.lua
+Blocks\WidgetsExtra.lua
 Blocks\Guild.lua
 Blocks\Pet.lua
 Options.lua
