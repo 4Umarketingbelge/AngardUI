@@ -123,10 +123,12 @@ ns.C = {
 			0.50, 0, 0.56, 0.18, 0.62, 0.20, 0.68, 0, 1, 0 },
 	},
 
-	-- Иконки: { основная, запасная }. Запасная берётся, если основной нет в клиенте.
+	-- Иконки: список по убыванию предпочтения. Берётся первая, которая есть в клиенте.
+	-- Эмблемы фракций Interface\\Timer\\*-Logo — крупные (256 px), их использует сама игра
+	-- в отсчёте перед полем боя.
 	icons = {
-		Horde = { "Interface\\Icons\\PVPCurrency-Honor-Horde", "Interface\\Icons\\INV_BannerPVP_01" },
-		Alliance = { "Interface\\Icons\\PVPCurrency-Honor-Alliance", "Interface\\Icons\\INV_BannerPVP_02" },
+		Horde = { "Interface\\Timer\\Horde-Logo", "Interface\\Icons\\PVPCurrency-Honor-Horde", "Interface\\Icons\\INV_BannerPVP_01" },
+		Alliance = { "Interface\\Timer\\Alliance-Logo", "Interface\\Icons\\PVPCurrency-Honor-Alliance", "Interface\\Icons\\INV_BannerPVP_02" },
 		Neutral = { "Interface\\Icons\\INV_Misc_QuestionMark", "Interface\\Icons\\INV_Misc_QuestionMark" },
 		steps = { "Interface\\Icons\\INV_Boots_05", "Interface\\Icons\\Ability_Rogue_Sprint" },
 		rules_pve = { "Interface\\Icons\\INV_Scroll_03", "Interface\\Icons\\INV_Misc_Note_01" },

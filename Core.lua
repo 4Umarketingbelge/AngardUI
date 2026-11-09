@@ -47,14 +47,17 @@ function ns.Safe(fn, ...)
 	end
 end
 
--- Иконка с запасным вариантом, если основного файла нет в клиенте.
+-- Иконка: первая из списка кандидатов, которая есть в клиенте.
 function ns.Icon(key)
-	local pair = C.icons[key] or C.icons.unknown
+	local list = C.icons[key] or C.icons.unknown
 	if type(GetFileIDFromPath) == "function" then
-		local id = ns.Call(GetFileIDFromPath, pair[1])
-		if not id or id == 0 then return pair[2] end
+		for i = 1, #list do
+			local id = ns.Call(GetFileIDFromPath, list[i])
+			if id and id ~= 0 then return list[i] end
+		end
+		return list[#list]
 	end
-	return pair[1]
+	return list[1]
 end
 
 function ns:Print(msg)

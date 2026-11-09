@@ -6,7 +6,7 @@ local floor, min = math.floor, math.min
 
 local W, PAD = C.layout.cardWidth, C.layout.pad
 local INNER = W - PAD * 2
-local HEADER_H, ROW_H, CELL_H = 44, 21, 25
+local HEADER_H, ROW_H, CELL_H = 54, 21, 25
 local MASK = "Interface\\CharacterFrame\\TempPortraitAlphaMask"
 
 local card = ns:NewBlock("card", W, 210)
@@ -22,20 +22,29 @@ local function circle(tex)
 	tex:AddMaskTexture(mask)
 end
 
-local ring = card:CreateTexture(nil, "ARTWORK", nil, 0)
-ring:SetSize(44, 44)
-ring:SetPoint("TOPLEFT", PAD - 2, -(PAD - 2))
+-- место под эмблему; в нём либо крупный герб фракции, либо круглая иконка с золотым кольцом
+local slot = CreateFrame("Frame", nil, card)
+slot:SetSize(HEADER_H, HEADER_H)
+slot:SetPoint("TOPLEFT", PAD - 2, -(PAD - 2))
+
+local crest = slot:CreateTexture(nil, "ARTWORK", nil, 1)
+crest:SetSize(HEADER_H + 6, HEADER_H + 6)
+crest:SetPoint("CENTER")
+
+local ring = slot:CreateTexture(nil, "ARTWORK", nil, 0)
+ring:SetSize(HEADER_H - 2, HEADER_H - 2)
+ring:SetPoint("CENTER")
 ring:SetColorTexture(C.gold[1], C.gold[2], C.gold[3], 1)
 circle(ring)
 
-local emblem = card:CreateTexture(nil, "ARTWORK", nil, 1)
-emblem:SetSize(40, 40)
-emblem:SetPoint("CENTER", ring)
+local emblem = slot:CreateTexture(nil, "ARTWORK", nil, 1)
+emblem:SetSize(HEADER_H - 6, HEADER_H - 6)
+emblem:SetPoint("CENTER")
 emblem:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 circle(emblem)
 
 local nameText = ns.Font(card, 17)
-nameText:SetPoint("TOPLEFT", ring, "TOPRIGHT", 7, -2)
+nameText:SetPoint("TOPLEFT", slot, "TOPRIGHT", 7, -6)
 nameText:SetPoint("RIGHT", card, "RIGHT", -PAD, 0)
 nameText:SetWordWrap(false)
 
@@ -43,7 +52,7 @@ local levelText = ns.Font(card, 14)
 levelText:SetPoint("TOPLEFT", nameText, "BOTTOMLEFT", 0, -3)
 
 local stepsText = ns.Font(card, 13, 1, 1, 1, "RIGHT")
-stepsText:SetPoint("RIGHT", card, "TOPRIGHT", -PAD, -(PAD + 33))
+stepsText:SetPoint("RIGHT", card, "TOPRIGHT", -PAD, -(PAD + 39))
 local stepsIcon = card:CreateTexture(nil, "ARTWORK")
 stepsIcon:SetSize(14, 14)
 stepsIcon:SetPoint("RIGHT", stepsText, "LEFT", -4, 0)
@@ -261,7 +270,12 @@ function card:Refresh()
 	levelText:SetText(L.LEVEL:format(P(UnitLevel("player"), 0)))
 
 	local faction = P(UnitFactionGroup("player"), "Neutral")
-	emblem:SetTexture(ns.Icon(C.icons[faction] and faction or "Neutral"))
+	local factionIcon = ns.Icon(C.icons[faction] and faction or "Neutral")
+	local isCrest = factionIcon:find("Timer", 1, true) ~= nil
+	crest:SetShown(isCrest)
+	ring:SetShown(not isCrest)
+	emblem:SetShown(not isCrest)
+	if isCrest then crest:SetTexture(factionIcon) else emblem:SetTexture(factionIcon) end
 
 	stepsIcon:SetTexture(ns.Icon("steps"))
 	stepsIcon:SetShown(db.steps)

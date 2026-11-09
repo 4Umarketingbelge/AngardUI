@@ -4,7 +4,7 @@
 
 *A character panel addon for World of Warcraft: Forever with health and mana bars and a simulated "medical" readout (pulse, temperature, steps). Display only. Locales: ruRU, enUS.*
 
-Статус: версия 1.1.0. Версия 1.0 запускалась в игре; правки 1.1 проверены вне игры на заглушке API.
+Статус: версия 1.2.0. Версия 1.0 запускалась в игре; правки 1.1 и 1.2 проверены вне игры на заглушке API.
 
 ## Что на панели
 
