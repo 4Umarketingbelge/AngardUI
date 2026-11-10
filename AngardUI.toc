@@ -3,7 +3,7 @@
 ## Notes: Character panel with a simulated "medical" readout: health and mana, steps, pet and swappable widgets (pulse, temperature, clock, weather and more).
 ## Notes-ruRU: Панель персонажа с симуляцией «медицины»: здоровье и мана, шаги, питомец и сменные виджеты (пульс, температура, часы, погода и другие).
 ## Author: Andrei Pilinoha
-## Version: 1.4.1
+## Version: 1.5.0
 ## IconTexture: Interface\Icons\Spell_Holy_Heal
 ## AddonCompartmentFunc: AngardUI_OnAddonCompartmentClick
 ## SavedVariables: AngardUIDB
@@ -23,5 +23,6 @@ Blocks\Temperature.lua
 Blocks\WidgetsExtra.lua
 Blocks\Guild.lua
 Blocks\Pet.lua
+Effects.lua
 Options.lua
 Minimap.lua

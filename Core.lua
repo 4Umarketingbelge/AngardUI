@@ -179,6 +179,7 @@ end
 
 local skinned = {} -- фоны блоков панели (для ползунка прозрачности)
 local borders = {} -- рамки блоков панели (для окраски в цвет фракции)
+ns.alertLayers = {} -- слои подсветки рамок при низком здоровье
 
 local FACTION_COLORS = {
 	Alliance = { 0.24, 0.56, 1.00 },
@@ -191,10 +192,19 @@ function ns.FactionColor()
 	return c[1], c[2], c[3]
 end
 
-function ns:ApplyBorders()
-	local r, g, b = C.gold[1], C.gold[2], C.gold[3]
-	if ns.db.factionBorders then r, g, b = ns.FactionColor() end
+-- Обычный цвет рамок: золотой или фракционный
+function ns.BorderColor()
+	if ns.db and ns.db.factionBorders then return ns.FactionColor() end
+	return C.gold[1], C.gold[2], C.gold[3]
+end
+
+function ns.PaintBorders(r, g, b)
 	for i = 1, #borders do borders[i]:SetColorTexture(r, g, b, 1) end
+end
+
+-- Красный оттенок в бою накладывает Effects.lua
+function ns:ApplyBorders()
+	if ns.UpdateAlert then ns.UpdateAlert() else ns.PaintBorders(ns.BorderColor()) end
 end
 
 -- Подсказка при наведении. fill(tooltip, frame) добавляет строки.
@@ -277,6 +287,30 @@ function ns.Skin(f, fixedAlpha)
 	edge("BOTTOMLEFT", "BOTTOMRIGHT")
 	edge("TOPLEFT", "BOTTOMLEFT", true)
 	edge("TOPRIGHT", "BOTTOMRIGHT", true)
+
+	-- Подсветка рамки при низком здоровье (её зажигает и заставляет биться Effects.lua).
+	-- Отдельный слой: его прозрачность — такт сердца, прозрачность самих полос — «здоровье ниже 50%».
+	if not fixedAlpha then
+		local layer = CreateFrame("Frame", nil, f)
+		layer:SetAllPoints()
+		layer:SetFrameLevel(f:GetFrameLevel() + 20)
+		layer:SetAlpha(0)
+		layer.edges = {}
+		local glow = C.alertGlow
+		local function glowEdge(p1, p2, vertical)
+			local t = layer:CreateTexture(nil, "OVERLAY")
+			t:SetColorTexture(glow[1], glow[2], glow[3], 1)
+			t:SetPoint(p1)
+			t:SetPoint(p2)
+			if vertical then t:SetWidth(2) else t:SetHeight(2) end
+			layer.edges[#layer.edges + 1] = t
+		end
+		glowEdge("TOPLEFT", "TOPRIGHT")
+		glowEdge("BOTTOMLEFT", "BOTTOMRIGHT")
+		glowEdge("TOPLEFT", "BOTTOMLEFT", true)
+		glowEdge("TOPRIGHT", "BOTTOMRIGHT", true)
+		ns.alertLayers[#ns.alertLayers + 1] = layer
+	end
 end
 
 -- Сердечко в родном красном цвете: встроенный атлас, если он есть в клиенте, иначе иконка.
@@ -628,8 +662,12 @@ SlashCmdList["ANGARDUI"] = function(msg)
 	elseif cmd == "reset" then
 		db.pos = false
 		ns:Print(L.MSG_RESET)
+	elseif cmd == "shine" then
+		ns:PlayShine()
+		return
 	elseif cmd == "debug" then
 		ns:Print(ns.lastError or L.MSG_NOERR)
+		if ns.DebugName then ns:Print(ns.DebugName()) end
 		return
 	else
 		ns:Print(L.MSG_HELP)

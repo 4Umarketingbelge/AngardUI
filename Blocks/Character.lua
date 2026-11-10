@@ -117,6 +117,7 @@ local function Cell(i)
 		if self.profName then
 			tt:AddLine(self.profName, C.gold[1], C.gold[2], C.gold[3])
 			tt:AddLine(self.profValue, 1, 1, 1)
+			tt:AddLine(L.TT_CLICK_PROFS, 0.7, 0.7, 0.7)
 		end
 	end, true)
 	cells[i] = c
@@ -321,14 +322,30 @@ function card:Refresh()
 	classFile = P(classFile)
 	local className = P(UnitClass("player"), "")
 	-- в Forever UnitName возвращает имя и фамилию двумя значениями
-	local first, surname = UnitName("player")
-	first, surname = P(first, ""), P(surname)
-	local fullName = first
-	if type(surname) == "string" and surname ~= "" then
-		local consts = Constants and Constants.CharacterNameSeparatorConsts
-		fullName = first .. (consts and consts.CHARACTERNAME_SURNAME_SEPARATOR or " ") .. surname
+	-- Сразу после входа (например, посреди полёта на грифоне) имени может ещё не быть
+	-- или оно приходит «секретным». Тогда показываем последнее известное и пробуем снова.
+	local rawFirst, rawSurname = UnitName("player")
+	local first, surname = P(rawFirst), P(rawSurname)
+	if type(first) == "string" and first ~= "" and first ~= UNKNOWNOBJECT then
+		local fullName = first
+		if type(surname) == "string" and surname ~= "" then
+			local consts = Constants and Constants.CharacterNameSeparatorConsts
+			fullName = first .. (consts and consts.CHARACTERNAME_SURNAME_SEPARATOR or " ") .. surname
+		end
+		ns.chardb.name = fullName
+		self.nameTries = 0
+		nameText:SetText(fullName)
+	else
+		if type(ns.chardb.name) == "string" then
+			nameText:SetText(ns.chardb.name)
+		elseif rawFirst ~= nil then
+			pcall(nameText.SetText, nameText, rawFirst) -- секретное значение надпись принимает
+		end
+		self.nameTries = (self.nameTries or 0) + 1
+		if self.nameTries <= 10 and C_Timer and C_Timer.After then
+			C_Timer.After(2, function() if ns.db then self:Refresh() end end)
+		end
 	end
-	nameText:SetText(fullName)
 	nameText:SetTextColor(ns.ClassColor(classFile))
 	levelText:SetText(L.LEVEL:format(P(UnitLevel("player"), 0)))
 
@@ -411,3 +428,57 @@ ns:On("PLAYER_XP_UPDATE", function() if ns.db then card:UpdateXP() end end)
 ns:On("TRAIT_CONFIG_UPDATED", full)
 ns:On("TRAIT_TREE_CURRENCY_INFO_UPDATED", full)
 ns:On("ACTIVE_COMBAT_CONFIG_CHANGED", full)
+
+------------------------------------------------------------------------
+-- Клики по карточке: имя — окно персонажа, деньги — сумки, профессии — книга профессий.
+-- Это обычные окна интерфейса (не защищённые), их можно открывать и в бою.
+------------------------------------------------------------------------
+
+local function openCharacter()
+	if ToggleCharacter then ns.Safe(ToggleCharacter, "PaperDollFrame") end
+end
+
+local function openBags()
+	if ToggleAllBags then ns.Safe(ToggleAllBags) elseif OpenAllBags then ns.Safe(OpenAllBags) end
+end
+
+local function openProfessions()
+	if ToggleProfessionsBook then ns.Safe(ToggleProfessionsBook)
+	elseif ToggleSpellBook then ns.Safe(ToggleSpellBook, BOOKTYPE_PROFESSION or "professions") end
+end
+
+local function over(region)
+	return region and region:IsShown() and region.IsMouseOver and region:IsMouseOver()
+end
+
+-- перетаскивание панели не должно открывать окна
+card:HookScript("OnMouseDown", function(self) self.dragged = false end)
+card:HookScript("OnDragStart", function(self) self.dragged = true end)
+card:HookScript("OnMouseUp", function(self, button)
+	if button ~= "LeftButton" or self.dragged or not ns.db then return end
+	if over(nameText) or over(slot) then
+		openCharacter()
+	elseif over(rows.money) then
+		openBags()
+	else
+		for i = 1, #cells do
+			if over(cells[i]) then openProfessions() return end
+		end
+	end
+end)
+
+-- Для /angard debug: что игра отдаёт как имя и что стоит в надписи карточки
+function ns.DebugName()
+	local function show(v)
+		if v == nil then return "nil" end
+		if ns.issecret(v) then return "<secret>" end
+		return ("%q"):format(tostring(v))
+	end
+	local a, b = UnitName("player")
+	local font, size = nameText:GetFont()
+	local r, g, bl, al = nameText:GetTextColor()
+	return ("UnitName: %s, %s | text: %s | font: %s %s | color: %.2f %.2f %.2f %.2f | width: %s | shown: %s | cached: %s"):format(
+		show(a), show(b), show(nameText:GetText()), tostring(font), tostring(size),
+		r or -1, g or -1, bl or -1, al or -1, tostring(nameText:GetStringWidth()), tostring(nameText:IsVisible()),
+		show(ns.chardb and ns.chardb.name))
+end
