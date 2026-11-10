@@ -57,6 +57,15 @@ for i = 1, MAX_BUTTONS do
 	hl:SetAllPoints()
 	hl:SetColorTexture(1, 1, 1, 0.12)
 	b:SetScript("OnClick", function(self) ns.Safe(OpenWhisper, self.fullName) end)
+	ns.Tooltip(b, function(tt, self)
+		local e = self.entry
+		if not e then return end
+		local r, g, bl = ns.ClassColor(e.class)
+		tt:AddLine(e.name, r, g, bl)
+		if type(e.rankName) == "string" then tt:AddLine(e.rankName, 1, 1, 1) end
+		if type(e.level) == "number" then tt:AddLine(L.LEVEL:format(e.level), 0.8, 0.8, 0.8) end
+		if type(e.zone) == "string" and e.zone ~= "" then tt:AddLine(e.zone, 0.8, 0.8, 0.8) end
+	end)
 	b:Hide()
 	buttons[i] = b
 end
@@ -89,13 +98,14 @@ local function Collect()
 	local myGUID = P(UnitGUID("player"))
 	local count = P(ns.Call(GetNumGuildMembers), 0)
 	for i = 1, count do
-		local name, _, rankIndex, _, _, _, _, _, online, _, class, _, _, _, _, _, guid = GetGuildRosterInfo(i)
+		local name, rankName, rankIndex, level, _, zone, _, _, online, _, class, _, _, _, _, _, guid = GetGuildRosterInfo(i)
 		if type(name) == "string" and type(rankIndex) == "number" and rankIndex <= gdb.maxRank
 			and (online or not gdb.onlineOnly) and (not guid or guid ~= myGUID) then
 			n = n + 1
 			local e = pool[n]
 			if not e then e = {}; pool[n] = e end
 			e.full, e.name, e.rank, e.class, e.online = name, ShortName(name), rankIndex, class, online and true or false
+			e.rankName, e.level, e.zone = rankName, level, zone
 			list[n] = e
 		end
 	end
@@ -119,6 +129,7 @@ function block:Refresh()
 		if i <= shown then
 			local e = list[i]
 			b.fullName = e.full
+			b.entry = e
 			b.text:SetText(e.name)
 			local r, g, bl = ns.ClassColor(e.class)
 			if not e.online then r, g, bl = r * 0.55, g * 0.55, bl * 0.55 end

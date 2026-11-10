@@ -64,6 +64,13 @@ separator:SetHeight(1)
 separator:SetPoint("TOPLEFT", PAD, -(PAD + HEADER_H + 2))
 separator:SetPoint("TOPRIGHT", -PAD, -(PAD + HEADER_H + 2))
 
+-- полоска опыта поверх разделителя: заполненная часть — доля до следующего уровня
+local xpFill = card:CreateTexture(nil, "OVERLAY")
+xpFill:SetColorTexture(0.62, 0.35, 0.95, 1)
+xpFill:SetHeight(2)
+xpFill:SetPoint("LEFT", separator, "LEFT")
+xpFill:Hide()
+
 ------------------------------------------------------------------------
 -- Строки и ячейки профессий
 ------------------------------------------------------------------------
@@ -106,6 +113,12 @@ local function Cell(i)
 	c.bar:SetColorTexture(1, 1, 1, 0.95)
 	c.bar:SetHeight(2)
 	c.bar:SetPoint("LEFT", c.barBg, "LEFT")
+	ns.Tooltip(c, function(tt, self)
+		if self.profName then
+			tt:AddLine(self.profName, C.gold[1], C.gold[2], C.gold[3])
+			tt:AddLine(self.profValue, 1, 1, 1)
+		end
+	end, true)
 	cells[i] = c
 	return c
 end
@@ -266,6 +279,16 @@ function card:UpdateSteps(force)
 	end
 end
 
+function card:UpdateXP()
+	local cur, maxv = P(UnitXP("player"), 0), P(UnitXPMax("player"), 0)
+	if not ns.db.card.xp or maxv <= 0 or cur <= 0 then
+		xpFill:Hide()
+		return
+	end
+	xpFill:SetWidth(math.max(min(cur / maxv, 1) * INNER, 0.001))
+	xpFill:Show()
+end
+
 function card:UpdateMoney()
 	local money = P(GetMoney(), 0)
 	local g, s, c = floor(money / 10000), floor(money / 100) % 100, money % 100
@@ -279,6 +302,7 @@ function card:UpdateProfessions()
 		local p, c = list[i], Cell(i)
 		c.icon:SetTexture(p.icon or ns.Icon("unknown"))
 		c.text:SetText(p.cur .. "/" .. p.max)
+		c.profName, c.profValue = p.name, p.cur .. " / " .. p.max
 		local frac = (p.max > 0) and min(p.cur / p.max, 1) or 0
 		c.bar:SetWidth(frac > 0 and (BAR_W * frac) or 0.001)
 		c.bar:SetShown(frac > 0)
@@ -320,6 +344,7 @@ function card:Refresh()
 	stepsIcon:SetShown(db.steps)
 	stepsText:SetShown(db.steps)
 	self:UpdateSteps(true)
+	self:UpdateXP()
 
 	-- строки
 	local specName, specIcon = GetSpec()
@@ -382,6 +407,7 @@ ns:On("PLAYER_SPECIALIZATION_CHANGED", full)
 ns:On("ACTIVE_TALENT_GROUP_CHANGED", full)
 ns:On("PLAYER_TALENT_UPDATE", full)
 ns:On("GAME_RULES_CHANGED", full)
+ns:On("PLAYER_XP_UPDATE", function() if ns.db then card:UpdateXP() end end)
 ns:On("TRAIT_CONFIG_UPDATED", full)
 ns:On("TRAIT_TREE_CURRENCY_INFO_UPDATED", full)
 ns:On("ACTIVE_COMBAT_CONFIG_CHANGED", full)

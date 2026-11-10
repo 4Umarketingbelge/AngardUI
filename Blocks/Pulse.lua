@@ -10,7 +10,6 @@ local FRAME = 1 / C.ecg.fps
 local function Build(view)
 	local heart = ns.Heart(view, 18)
 	heart:SetPoint("TOPLEFT", 7, -7)
-	heart:SetVertexColor(Y[1], Y[2], Y[3])
 
 	local number = ns.Font(view, 21, Y[1], Y[2], Y[3], "RIGHT")
 	number:SetPoint("TOPRIGHT", -8, -6)
@@ -101,8 +100,10 @@ local function Build(view)
 end
 
 ns:RegisterWidget("pulse", {
-	title = L.W_PULSE,
+	titleKey = "W_PULSE",
 	interval = C.intervals.sim,
+	usesSim = true,
 	Build = Build,
 	Update = function(view, force) view:UpdatePulse(force) end,
+	Tooltip = function(tt) ns.PulseTooltip(tt) end,
 })

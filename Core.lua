@@ -178,10 +178,76 @@ end
 ------------------------------------------------------------------------
 
 local skinned = {} -- фоны блоков панели (для ползунка прозрачности)
+local borders = {} -- рамки блоков панели (для окраски в цвет фракции)
+
+local FACTION_COLORS = {
+	Alliance = { 0.24, 0.56, 1.00 },
+	Horde = { 0.92, 0.18, 0.15 },
+}
+
+-- Цвет фракции персонажа: синий у Альянса, красный у Орды, золотой у нейтральных
+function ns.FactionColor()
+	local c = FACTION_COLORS[ns.Plain(UnitFactionGroup("player"), "")] or C.gold
+	return c[1], c[2], c[3]
+end
+
+function ns:ApplyBorders()
+	local r, g, b = C.gold[1], C.gold[2], C.gold[3]
+	if ns.db.factionBorders then r, g, b = ns.FactionColor() end
+	for i = 1, #borders do borders[i]:SetColorTexture(r, g, b, 1) end
+end
+
+-- Подсказка при наведении. fill(tooltip, frame) добавляет строки.
+-- passClicks — для мелких элементов внутри блока: клики и перетаскивание проходят к блоку.
+function ns.Tooltip(frame, fill, passClicks)
+	frame:SetScript("OnEnter", function(self)
+		local tt = GameTooltip
+		if not tt or not ns.db then return end
+		tt:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
+		ns.Safe(fill, tt, self)
+		tt:Show()
+	end)
+	frame:SetScript("OnLeave", function()
+		if GameTooltip then GameTooltip:Hide() end
+	end)
+	if passClicks and frame.SetPropagateMouseClicks then pcall(frame.SetPropagateMouseClicks, frame, true) end
+end
+
+-- Шрифт: стандартный шрифт клиента. Если выбран русский язык, а клиент не русский,
+-- берётся шрифт с кириллицей (он есть в файлах игры на любом языке), иначе вместо букв
+-- были бы квадратики.
+local CYRILLIC_FONTS = { "Fonts\\FRIZQT___CYR.TTF", "Fonts\\ARIALN.TTF" }
+local fontStrings = {} -- все надписи аддона: шрифт меняется вместе с языком
+
+local function applyFont(fs)
+	local size = fs.angardSize
+	-- сначала стандартный шрифт: у надписи всегда должен быть какой-то шрифт
+	fs:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", size, "")
+	if not ns.NeedsCyrillicFont() then return end
+	for i = 1, #CYRILLIC_FONTS do
+		-- если файла нет, шрифт не меняется: по имени файла проверяем, что он применился.
+		-- Если проверка не сработала, останется последний из списка — он тоже с кириллицей.
+		fs:SetFont(CYRILLIC_FONTS[i], size, "")
+		local file = fs:GetFont()
+		if type(file) == "string" and file:upper():find(CYRILLIC_FONTS[i]:match("([^\\]+)%.TTF$"), 1, true) then return end
+	end
+end
+
+function ns.RefreshFonts()
+	for i = 1, #fontStrings do applyFont(fontStrings[i]) end
+end
+
+-- Сменить язык: строки и шрифт
+function ns:ApplyLanguage(code)
+	ns.SetLanguage(code)
+	ns.RefreshFonts()
+end
 
 function ns.Font(parent, size, r, g, b, justify)
 	local fs = parent:CreateFontString(nil, "OVERLAY")
-	fs:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", size, "")
+	fs.angardSize = size
+	fontStrings[#fontStrings + 1] = fs
+	applyFont(fs)
 	fs:SetShadowColor(0, 0, 0, 1)
 	fs:SetShadowOffset(1, -1)
 	fs:SetTextColor(r or 1, g or 1, b or 1)
@@ -202,6 +268,7 @@ function ns.Skin(f, fixedAlpha)
 	local function edge(p1, p2, vertical)
 		local t = f:CreateTexture(nil, "BORDER")
 		t:SetColorTexture(g[1], g[2], g[3], 1)
+		if not fixedAlpha then borders[#borders + 1] = t end
 		t:SetPoint(p1)
 		t:SetPoint(p2)
 		if vertical then t:SetWidth(1) else t:SetHeight(1) end
@@ -212,7 +279,7 @@ function ns.Skin(f, fixedAlpha)
 	edge("TOPRIGHT", "BOTTOMRIGHT", true)
 end
 
--- Сердечко: встроенный атлас, если он есть в клиенте, иначе иконка.
+-- Сердечко в родном красном цвете: встроенный атлас, если он есть в клиенте, иначе иконка.
 function ns.Heart(parent, size)
 	local t = parent:CreateTexture(nil, "ARTWORK")
 	t:SetSize(size, size)
@@ -223,7 +290,6 @@ function ns.Heart(parent, size)
 		t:SetTexture(ns.Icon("heart"))
 		t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 	end
-	t:SetDesaturated(true) -- красим сами через SetVertexColor
 	return t
 end
 
@@ -235,6 +301,11 @@ function ns.CreatePortrait(parent)
 		model:SetPoint("TOPLEFT", 2, -2)
 		model:SetPoint("BOTTOMRIGHT", -2, 2)
 		p.model = model
+		-- модель питомца догружается позже: крупный план задаём ещё раз, когда она готова,
+		-- иначе в кадр попадает всё тело
+		pcall(model.SetScript, model, "OnModelLoaded", function(self)
+			if self.SetPortraitZoom then self:SetPortraitZoom(1) end
+		end)
 	end
 	local tex = parent:CreateTexture(nil, "ARTWORK")
 	tex:SetPoint("TOPLEFT", 2, -2)
@@ -420,7 +491,9 @@ function ns:ApplyAll()
 	root:SetScale(db.scale)
 	ns:ApplyPosition()
 	for i = 1, #skinned do skinned[i]:SetAlpha(db.bgAlpha) end
-	for _, f in pairs(ns.blocks) do f:EnableMouse(not db.locked) end
+	-- мышь нужна всегда: подсказки, меню виджетов; перетаскивание — только без блокировки
+	for _, f in pairs(ns.blocks) do f:EnableMouse(true) end
+	ns:ApplyBorders()
 	ns:RefreshAll()
 	ns:UpdateVisibility()
 	ns:ApplyPlayerFrame()
@@ -473,6 +546,9 @@ end
 function ns:ResetAll()
 	wipe(ns.db)
 	copyDefaults(ns.defaults, ns.db)
+	ns.chardb.slots = copyDefaults(ns.charDefaults.slots, {})
+	ns:ApplyLanguage(ns.db.language)
+	if ns.RebuildWidgets then ns:RebuildWidgets() end
 	ns:ApplyAll()
 end
 
@@ -481,6 +557,13 @@ ns:On("ADDON_LOADED", function(_, name)
 	AngardUIDB = copyDefaults(ns.defaults, type(AngardUIDB) == "table" and AngardUIDB or {})
 	AngardUICharDB = copyDefaults(ns.charDefaults, type(AngardUICharDB) == "table" and AngardUICharDB or {})
 	ns.db, ns.chardb = AngardUIDB, AngardUICharDB
+	ns:ApplyLanguage(ns.db.language)
+	-- 1.3 -> 1.4: выбор виджетов стал своим у каждого персонажа
+	if type(ns.db.slots) == "table" and not ns.chardb.slotsMigrated then
+		ns.chardb.slots.top = ns.db.slots.top or ns.chardb.slots.top
+		ns.chardb.slots.bottom = ns.db.slots.bottom or ns.chardb.slots.bottom
+	end
+	ns.chardb.slotsMigrated = true
 	-- 1.0 -> 1.1: блок давления заменён блоком здоровья и маны
 	if ns.db.blocks.pressure ~= nil then
 		ns.db.blocks.vitals = ns.db.blocks.pressure

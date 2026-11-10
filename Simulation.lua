@@ -2,7 +2,7 @@
 -- читает состояние персонажа и ничего не делает в игре.
 -- Все коэффициенты — в Config.lua (ns.C.pulse / stress / bp / temp).
 local _, ns = ...
-local C = ns.C
+local L, C = ns.L, ns.C
 local P, issecret = ns.Plain, ns.issecret
 local exp, min, max, random = math.exp, math.min, math.max, math.random
 
@@ -134,7 +134,8 @@ end
 
 -- Раз в секунду: всё, что не нужно читать чаще
 local function SlowScan()
-	if not ns.root:IsShown() then return end
+	-- считаем, только когда панель видна и показан виджет, которому нужна симуляция
+	if not ns.root:IsShown() or not ns.SimNeeded() then return end
 	if env.aurasDirty then
 		env.aurasDirty = false
 		pcall(ScanAuras)
@@ -157,7 +158,8 @@ end
 ------------------------------------------------------------------------
 
 local function Tick(dt)
-	if not ns.root:IsShown() then return end
+	-- считаем, только когда панель видна и показан виджет, которому нужна симуляция
+	if not ns.root:IsShown() or not ns.SimNeeded() then return end
 	if dt > 2 then dt = 2 end
 	local Cp, Cs, Cb, Ct = C.pulse, C.stress, C.bp, C.temp
 	local sens = C.sensitivity[ns.db.med.sens] or 1
@@ -216,11 +218,15 @@ local function Tick(dt)
 		up = up + Cp.run
 	end
 	if falling then up = up + Cp.fall end
+	-- для подсказки пульса
+	env.moveState = swimming and "swim" or ((moving and not mounted) and "run" or nil)
+	env.falling = falling and true or false
 	if env.breath then up = up + Cp.breath end
 	if not inCombat then
 		if env.sitting or env.eating then down = down + Cp.sit end
 		if env.eating then down = down + Cp.eat end
-		if P(IsResting(), false) then down = down + Cp.rest end
+		env.resting = P(IsResting(), false) and true or false
+		if env.resting then down = down + Cp.rest end
 	end
 
 	local target = dead and 0 or clamp(med.rest + up * sens + med.stress * Cp.perStress + down, Cp.min, Cp.max)
@@ -260,6 +266,56 @@ end
 ------------------------------------------------------------------------
 -- Статусы (их используют блоки)
 ------------------------------------------------------------------------
+
+-- Подсказка пульса и давления: что сейчас поднимает или успокаивает (базовые значения)
+function ns.PulseTooltip(tt)
+	local Cp = C.pulse
+	tt:AddLine(L.TIP_REST:format(med.rest), 1, 1, 1)
+	tt:AddLine(L.TIP_FACTORS, 0.8, 0.8, 0.8)
+	local any = false
+	local function add(text, v)
+		any = true
+		if v > 0 then
+			tt:AddDoubleLine(text, "+" .. v, 1, 1, 1, 1, 0.5, 0.4)
+		else
+			tt:AddDoubleLine(text, tostring(v), 1, 1, 1, 0.4, 1, 0.5)
+		end
+	end
+	if ns.state.inCombat then
+		add(L.F_COMBAT, Cp.combat)
+		if env.attackers > 0 then
+			add(L.F_ATTACKERS:format(env.attackers), min(env.attackers, Cp.maxAttackers) * Cp.perAttacker)
+		end
+	end
+	if env.targetBoss or env.targetSkull then add(L.F_BOSS, Cp.boss) elseif env.targetElite then add(L.F_ELITE, Cp.elite) end
+	local low = math.floor((1 - env.hp) * Cp.lowHealth + 0.5)
+	if low > 0 then add(L.F_HEALTH, low) end
+	if env.moveState == "swim" then add(L.F_SWIM, Cp.swim) elseif env.moveState == "run" then add(L.F_RUN, Cp.run) end
+	if env.falling then add(L.F_FALL, Cp.fall) end
+	if env.breath then add(L.F_BREATH, Cp.breath) end
+	local stress = math.floor(med.stress * Cp.perStress + 0.5)
+	if stress > 0 then add(L.F_STRESS, stress) end
+	if not ns.state.inCombat then
+		if env.sitting or env.eating then add(L.F_SIT, Cp.sit) end
+		if env.eating then add(L.F_EAT, Cp.eat) end
+		if env.resting then add(L.F_REST, Cp.rest) end
+	end
+	if not any then tt:AddLine(L.TIP_NOTHING, 0.6, 0.6, 0.6) end
+end
+
+-- Подсказка температуры
+function ns.TempTooltip(tt)
+	local Ct = C.temp
+	tt:AddLine(L["CLIMATE_" .. (env.climateKind or "mild"):upper()], 1, 1, 1)
+	local function add(text, v)
+		tt:AddDoubleLine(text, (v > 0 and "+" or "") .. ns.Decimal(v, 1), 1, 1, 1, 1, 0.6, 0.4)
+	end
+	if env.climate ~= 0 then add(L.W_WEATHER, env.climate) end
+	if env.sick then add(L.F_SICK, Ct.sick) end
+	if env.drunk > 0 then add(L.F_DRUNK, env.drunk * Ct.drunkPerLevel) end
+	if env.combatTime > 0 then add(L.F_LONGFIGHT, min(env.combatTime / Ct.combatRamp, 1) * Ct.combatMax) end
+	if env.moveState == "swim" then add(L.F_SWIM, Ct.swim) end
+end
 
 -- "normal" / "high" / "crisis"
 function ns.PressureStatus()

@@ -21,19 +21,8 @@ local menu, confirm
 -- Цвет фракции
 ------------------------------------------------------------------------
 
-local FACTION_COLORS = {
-	Alliance = { 0.24, 0.56, 1.00 },
-	Horde = { 0.92, 0.18, 0.15 },
-	Neutral = C.gold,
-}
-
-local accent
 local function A()
-	if not accent then
-		local faction = ns.Plain(UnitFactionGroup("player"), "Neutral")
-		accent = FACTION_COLORS[faction] or FACTION_COLORS.Neutral
-	end
-	return accent[1], accent[2], accent[3]
+	return ns.FactionColor()
 end
 
 ------------------------------------------------------------------------
@@ -250,16 +239,16 @@ local function OpenMenu(anchor, items, current, onPick)
 end
 
 -- itemsFn() -> { { value = ..., text = ... }, ... }
-local function Dropdown(parent, text, itemsFn, get, set)
+local function Dropdown(parent, text, itemsFn, get, set, width)
 	local r, g, b = A()
 	local holder = CreateFrame("Frame", nil, parent)
-	holder:SetSize(INNER, 42)
+	holder:SetSize(width or INNER, 42)
 	local label = ns.Font(holder, 12)
 	label:SetPoint("TOPLEFT")
 	label:SetText(text)
 
 	local btn = CreateFrame("Button", nil, holder)
-	btn:SetSize(INNER, 22)
+	btn:SetSize(width or INNER, 22)
 	btn:SetPoint("BOTTOMLEFT", 0, 0)
 	Box(btn, 0.55, 0.6)
 	btn.text = ns.Font(btn, 12)
@@ -271,6 +260,7 @@ local function Dropdown(parent, text, itemsFn, get, set)
 	arrow:SetSize(12, 12)
 	arrow:SetPoint("RIGHT", -6, 0)
 	arrow:SetRotation(-math.pi / 2)
+	arrow:SetDesaturated(true) -- иначе жёлтая текстура даёт зелёный оттенок
 	arrow:SetVertexColor(r, g, b)
 	local hl = btn:CreateTexture(nil, "HIGHLIGHT")
 	hl:SetAllPoints()
@@ -314,6 +304,11 @@ local function flag(tableKey, key)
 	end
 end
 
+-- то же для данных персонажа
+local function cflag(tableKey, key)
+	return function() return ns.chardb[tableKey][key] end, function(v) ns.chardb[tableKey][key] = v end
+end
+
 local function percent(v) return floor(v * 100 + 0.5) .. "%" end
 
 ------------------------------------------------------------------------
@@ -322,6 +317,8 @@ local function percent(v) return floor(v * 100 + 0.5) .. "%" end
 
 local function Build()
 	local r, g, b = A()
+	wipe(refreshers) -- окно пересобирается при смене языка
+	wipe(menuItems)
 
 	win = NewFrame("Frame", "AngardUIOptionsFrame", UIParent)
 	win:SetPoint("CENTER")
@@ -335,7 +332,9 @@ local function Build()
 	win:SetScript("OnDragStop", win.StopMovingOrSizing)
 	win:Hide()
 	Rounded(win, FILL_WINDOW, 0.9, 16)
-	tinsert(UISpecialFrames, "AngardUIOptionsFrame") -- закрытие по Esc
+	if not tContains or not tContains(UISpecialFrames, "AngardUIOptionsFrame") then
+		tinsert(UISpecialFrames, "AngardUIOptionsFrame") -- закрытие по Esc
+	end
 
 	menu = NewFrame("Frame", nil, win)
 	menu:SetFrameStrata("TOOLTIP")
@@ -385,6 +384,22 @@ local function Build()
 	local version = C_AddOns and ns.Call(C_AddOns.GetAddOnMetadata, ADDON, "Version")
 	sub:SetText(L.OPT_SUB:format(type(version) == "string" and version or "?"))
 
+	-- язык: сразу пересобирает окно и виджеты, перезагрузка интерфейса не нужна
+	local languages = {
+		{ value = "auto", text = L.LANG_AUTO },
+		{ value = "ruRU", text = "Русский" },
+		{ value = "enUS", text = "English" },
+	}
+	local language = Dropdown(hero, L.O_LANGUAGE, function() return languages end,
+		function() return ns.db.language end,
+		function(value)
+			ns.db.language = value
+			ns:ApplyLanguage(value)
+			ns:RebuildWidgets()
+			C_Timer.After(0, function() ns.Safe(ns.RebuildOptions, ns) end)
+		end, 150)
+	language:SetPoint("RIGHT", hero, "RIGHT", -52, 0)
+
 	local closeX = CreateFrame("Button", nil, hero)
 	closeX:SetSize(26, 26)
 	closeX:SetPoint("RIGHT", -12, 0)
@@ -404,7 +419,8 @@ local function Build()
 		t:Add(Check(t, L.O_LOCK, flag(nil, "locked")))
 		t:Add(Check(t, L.O_HIDE_COMBAT, flag(nil, "hideInCombat")))
 		t:Add(Check(t, L.O_HIDE_PLAYER, flag(nil, "hidePlayerFrame")))
-		t:Add(Check(t, L.O_MINIMAP, flag("minimap", "show")), 6)
+		t:Add(Check(t, L.O_MINIMAP, flag("minimap", "show")))
+		t:Add(Check(t, L.O_FACTION_BORDERS, flag(nil, "factionBorders")), 6)
 		local getS, setS = flag(nil, "scale")
 		t:Add(Slider(t, L.O_SCALE, 0.6, 1.6, 0.05, getS, setS, percent))
 		local getA, setA = flag(nil, "bgAlpha")
@@ -454,13 +470,13 @@ local function Build()
 		local function widgetList()
 			local items = {}
 			for i, key in ipairs(ns.widgetOrder) do
-				items[i] = { value = key, text = ns.widgets[key].title }
+				items[i] = { value = key, text = ns.WidgetTitle(key) }
 			end
 			return items
 		end
-		local getT, setT = flag("slots", "top")
+		local getT, setT = cflag("slots", "top")
 		t:Add(Dropdown(t, L.W_SLOT1, widgetList, getT, setT))
-		local getB, setB = flag("slots", "bottom")
+		local getB, setB = cflag("slots", "bottom")
 		t:Add(Dropdown(t, L.W_SLOT2, widgetList, getB, setB))
 		local foods = {
 			{ value = "meat", text = L.FOOD_MEAT },
@@ -485,7 +501,7 @@ local function Build()
 	-- 3. Карточка
 	do
 		local t = Tile(2, L.TAB_CARD)
-		for _, key in ipairs({ "spec", "rules", "time", "money", "steps", "profs" }) do
+		for _, key in ipairs({ "spec", "rules", "time", "money", "steps", "profs", "xp" }) do
 			t:Add(Check(t, L["C_" .. key:upper()], flag("card", key)))
 		end
 		t.y = t.y + 4
@@ -593,6 +609,17 @@ end
 function ns:RefreshOptions()
 	if not win or not win:IsShown() then return end
 	for i = 1, #refreshers do ns.Safe(refreshers[i].Refresh) end
+end
+
+-- Пересобрать окно (после смены языка). Старые фреймы остаются скрытыми.
+function ns:RebuildOptions()
+	if not win then return end
+	local shown = win:IsShown()
+	win:Hide()
+	win = nil
+	Build()
+	if shown then win:Show() end
+	ns:ApplyAll()
 end
 
 function ns:ToggleOptions(forceShow)

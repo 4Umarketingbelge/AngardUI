@@ -4,7 +4,8 @@ local L, C = ns.L, ns.C
 local floor = math.floor
 local Y = C.yellow
 
-local STATUS_TEXT = { chill = L.T_CHILL, normal = L.T_NORMAL, fever = L.T_FEVER, overheat = L.T_OVERHEAT }
+-- ключи строк; сам текст берётся при показе, чтобы смена языка действовала сразу
+local STATUS_KEY = { chill = "T_CHILL", normal = "T_NORMAL", fever = "T_FEVER", overheat = "T_OVERHEAT" }
 local STATUS_COLOR = {
 	chill = { 0.55, 0.80, 1.00 },
 	normal = { Y[1], Y[2], Y[3] },
@@ -72,7 +73,7 @@ local function Build(view)
 			local col = STATUS_COLOR[st]
 			value:SetTextColor(col[1], col[2], col[3])
 			status:SetTextColor(col[1], col[2], col[3])
-			status:SetText(STATUS_TEXT[st])
+			status:SetText(L[STATUS_KEY[st]])
 			column:SetColorTexture(col[1], col[2], col[3], 1)
 			bulb:SetVertexColor(col[1], col[2], col[3])
 		end
@@ -80,8 +81,10 @@ local function Build(view)
 end
 
 ns:RegisterWidget("temp", {
-	title = L.W_TEMP,
+	titleKey = "W_TEMP",
 	interval = 1,
+	usesSim = true,
 	Build = Build,
 	Update = function(view, force) view:UpdateTemp(force) end,
+	Tooltip = function(tt) ns.TempTooltip(tt) end,
 })

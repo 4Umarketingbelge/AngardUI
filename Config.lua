@@ -180,6 +180,8 @@ ns.C = {
 		wx_fog = { "Interface\\Icons\\Spell_Nature_Sleep", "Interface\\Icons\\Spell_Frost_FrostNova" },
 		wx_clear = { "Interface\\Icons\\Spell_Holy_HolyBolt", "Interface\\Icons\\Spell_Fire_Fire" },
 		wx_night = { "Interface\\Icons\\Spell_Nature_StarFall", "Interface\\Icons\\Spell_Nature_Sleep" },
+		ammo = { "Interface\\Icons\\INV_Ammo_Arrow_01", "Interface\\Icons\\INV_Ammo_Bullet_01" },
+		hearth = { "Interface\\Icons\\INV_Misc_Rune_01" },
 		-- корм питомца
 		food_meat = { "Interface\\Icons\\INV_Misc_Food_14", "Interface\\Icons\\INV_Misc_Food_16" },
 		food_veggies = { "Interface\\Icons\\INV_Misc_Food_19", "Interface\\Icons\\INV_Misc_Food_08" },
@@ -218,11 +220,12 @@ ns.defaults = {
 	minimap = { show = true, angle = 205 }, -- кнопка у миникарты
 	pos = false, -- false = позиция по умолчанию
 	blocks = { card = true, portrait = true, pulse = true, vitals = true, temp = true, guild = true, pet = true },
-	card = { spec = true, rules = true, time = true, money = true, steps = true, profs = true },
+	card = { spec = true, rules = true, time = true, money = true, steps = true, profs = true, xp = true },
 	ruleset = "auto", -- auto / pve / pvp / hc / rp
 	med = { sens = "normal", unit = "C", ecgAnim = true },
-	slots = { top = "pulse", bottom = "temp" }, -- какие виджеты стоят в двух сменных квадратах
 	pet = { food = "meat" }, -- meat / veggies / fish
+	language = "auto", -- auto / ruRU / enUS
+	factionBorders = false, -- рамки панели в цвете фракции вместо золотых
 	guild = { count = 8, maxRank = 1, onlineOnly = true },
 	steps = { length = 0.75 },
 }
@@ -230,6 +233,7 @@ ns.defaults = {
 -- Данные персонажа
 ns.charDefaults = {
 	steps = 0,
+	slots = { top = "pulse", bottom = "temp" }, -- какие виджеты стоят в двух сменных квадратах
 	levelSeconds = 0,
 	levelInit = false,
 	level = 0,

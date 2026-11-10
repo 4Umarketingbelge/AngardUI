@@ -2,7 +2,7 @@
 -- здоровья и «корм» — ряд кусочков, который съедается в сторону портрета, когда питомец
 -- голоден. Обычные незащищённые фреймы: появляются и исчезают по UNIT_PET, в том числе в бою.
 local _, ns = ...
-local C = ns.C
+local L, C = ns.L, ns.C
 local P = ns.Plain
 local lay = C.layout
 local H = lay.square / 2
@@ -67,6 +67,11 @@ local foodBox = CreateFrame("Frame", nil, block)
 foodBox:SetSize(RIGHT_W, FOOD_H)
 foodBox:SetPoint("BOTTOMLEFT", H + GAP, 0)
 ns.Skin(foodBox)
+foodBox:EnableMouse(true)
+ns.Tooltip(foodBox, function(tt, self)
+	tt:AddLine(L.PET_MOOD, C.gold[1], C.gold[2], C.gold[3])
+	if self.mood then tt:AddLine(L["PET_MOOD_" .. self.mood], 1, 1, 1) end
+end, true)
 
 local pieces = {}
 for i = 1, C.pet.pieces do
@@ -90,6 +95,7 @@ end
 local function UpdateFood()
 	local happiness = GetHappiness()
 	foodBox:SetShown(happiness ~= nil)
+	foodBox.mood = happiness
 	if not happiness then return end
 
 	local style = C.petFood[ns.db.pet.food] or C.petFood.meat

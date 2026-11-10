@@ -1,4 +1,5 @@
 -- AngardUI: локализация. ruRU — основная, для остальных локалей используется enUS.
+-- Язык можно выбрать вручную в настройках.
 local _, ns = ...
 
 local ru = {
@@ -67,6 +68,53 @@ local ru = {
 	FOOD_MEAT = "Мясо",
 	FOOD_VEGGIES = "Овощи и фрукты",
 	FOOD_FISH = "Рыба",
+	-- Подсказки и новые виджеты (1.4)
+	TIP_SLOT = "ПКМ — выбрать виджет, колёсико — листать",
+	TIP_REST = "Пульс покоя: %d",
+	TIP_FACTORS = "Что сейчас влияет:",
+	TIP_NOTHING = "ничего, покой",
+	F_COMBAT = "бой",
+	F_ATTACKERS = "атакующих: %d",
+	F_BOSS = "цель-босс",
+	F_ELITE = "элитная цель",
+	F_HEALTH = "потеря здоровья",
+	F_SWIM = "плавание",
+	F_RUN = "бег",
+	F_FALL = "падение",
+	F_BREATH = "нехватка воздуха",
+	F_STRESS = "стресс",
+	F_SIT = "сидя",
+	F_EAT = "еда и питьё",
+	F_REST = "зона отдыха",
+	F_SICK = "яд или болезнь",
+	F_DRUNK = "опьянение",
+	F_LONGFIGHT = "долгий бой",
+	CLIMATE_SNOW = "Климат: снега",
+	CLIMATE_COLD = "Климат: прохладно",
+	CLIMATE_MILD = "Климат: умеренный",
+	CLIMATE_SWAMP = "Климат: болота",
+	CLIMATE_HOT = "Климат: жарко",
+	CLIMATE_DESERT = "Климат: пустыня",
+	CLIMATE_LAVA = "Климат: лава",
+	TIP_WEATHER = "Погода выдумана по климату зоны и времени суток.",
+	TIP_XPH = "Считается по опыту, набранному с момента входа в игру.",
+	W_XPH = "Опыт в час",
+	W_XPH_NONE = "нет данных",
+	W_XPH_RATE = "%s опыта/ч",
+	W_AMMO = "Боезапас",
+	W_AMMO_NONE = "нет боеприпасов",
+	W_AMMO_LEFT = "осталось",
+	W_HEARTH = "Камень возвращения",
+	W_READY = "готов",
+	W_SECONDS = "%d с",
+	PET_MOOD = "Настроение питомца",
+	PET_MOOD_1 = "недоволен — пора кормить",
+	PET_MOOD_2 = "доволен",
+	PET_MOOD_3 = "счастлив",
+	O_FACTION_BORDERS = "Рамки панели в цвете фракции",
+	C_XP = "Полоска опыта",
+	O_LANGUAGE = "Язык / Language",
+	LANG_AUTO = "Как в игре",
 	-- Гильдия
 	GUILD_HINT = "Писать этим офицерам",
 	GUILD_MORE = "и ещё %d",
@@ -83,7 +131,7 @@ local ru = {
 	MSG_NOERR = "ошибок не зафиксировано.",
 	-- Настройки
 	OPT_TITLE = "AngardUI — настройки",
-	OPT_SUB = "Настройки · версия %s",
+	OPT_SUB = "Настройки — версия %s",
 	OPT_OPEN = "Открыть настройки AngardUI",
 	OPT_DESC = "Панель персонажа с симуляцией пульса и температуры. Команда: /angard",
 	TAB_GENERAL = "Общее",
@@ -201,6 +249,52 @@ local en = {
 	FOOD_MEAT = "Meat",
 	FOOD_VEGGIES = "Fruit and vegetables",
 	FOOD_FISH = "Fish",
+	TIP_SLOT = "Right click: choose a widget. Mouse wheel: cycle",
+	TIP_REST = "Resting pulse: %d",
+	TIP_FACTORS = "What affects it now:",
+	TIP_NOTHING = "nothing, at rest",
+	F_COMBAT = "combat",
+	F_ATTACKERS = "attackers: %d",
+	F_BOSS = "boss target",
+	F_ELITE = "elite target",
+	F_HEALTH = "health lost",
+	F_SWIM = "swimming",
+	F_RUN = "running",
+	F_FALL = "falling",
+	F_BREATH = "out of breath",
+	F_STRESS = "stress",
+	F_SIT = "sitting",
+	F_EAT = "food and drink",
+	F_REST = "rest area",
+	F_SICK = "poison or disease",
+	F_DRUNK = "drunk",
+	F_LONGFIGHT = "long fight",
+	CLIMATE_SNOW = "Climate: snow",
+	CLIMATE_COLD = "Climate: chilly",
+	CLIMATE_MILD = "Climate: mild",
+	CLIMATE_SWAMP = "Climate: swamp",
+	CLIMATE_HOT = "Climate: hot",
+	CLIMATE_DESERT = "Climate: desert",
+	CLIMATE_LAVA = "Climate: lava",
+	TIP_WEATHER = "The weather is made up from the zone climate and the time of day.",
+	TIP_XPH = "Based on the experience gained since you logged in.",
+	W_XPH = "XP per hour",
+	W_XPH_NONE = "no data yet",
+	W_XPH_RATE = "%s XP/h",
+	W_AMMO = "Ammo",
+	W_AMMO_NONE = "no ammo",
+	W_AMMO_LEFT = "left",
+	W_HEARTH = "Hearthstone",
+	W_READY = "ready",
+	W_SECONDS = "%d s",
+	PET_MOOD = "Pet mood",
+	PET_MOOD_1 = "unhappy — time to feed",
+	PET_MOOD_2 = "content",
+	PET_MOOD_3 = "happy",
+	O_FACTION_BORDERS = "Panel borders in faction color",
+	C_XP = "Experience bar",
+	O_LANGUAGE = "Language / Язык",
+	LANG_AUTO = "Same as the game",
 	GUILD_HINT = "Whisper these officers",
 	GUILD_MORE = "and %d more",
 	GUILD_NONE = "No officers online",
@@ -214,7 +308,7 @@ local en = {
 	MSG_HELP = "commands: /angard (settings), show, hide, lock, reset",
 	MSG_NOERR = "no errors recorded.",
 	OPT_TITLE = "AngardUI — settings",
-	OPT_SUB = "Settings · version %s",
+	OPT_SUB = "Settings — version %s",
 	OPT_OPEN = "Open AngardUI settings",
 	OPT_DESC = "Character panel with simulated pulse and temperature. Command: /angard",
 	TAB_GENERAL = "General",
@@ -269,9 +363,27 @@ local en = {
 	NO = "No",
 }
 
-local src = (GetLocale() == "ruRU") and ru or en
-local L = {}
-for k, v in pairs(ru) do
-	L[k] = src[k] or v
+-- L читает строки из текущего языка в момент обращения, поэтому язык можно сменить
+-- в настройках без перезагрузки интерфейса. Нет строки — берётся русская, затем сам ключ.
+local tables = { ruRU = ru, enUS = en }
+local auto = (GetLocale() == "ruRU") and ru or en
+local current = auto
+
+ns.L = setmetatable({}, {
+	__index = function(_, key)
+		local v = current[key]
+		if v == nil then v = ru[key] end
+		if v == nil then v = key end
+		return v
+	end,
+})
+
+-- code: "auto" (как в игре), "ruRU" или "enUS"
+function ns.SetLanguage(code)
+	current = tables[code] or auto
 end
-ns.L = L
+
+-- Русский текст на нерусском клиенте: стандартный шрифт игры там без кириллицы
+function ns.NeedsCyrillicFont()
+	return current == ru and GetLocale() ~= "ruRU"
+end
